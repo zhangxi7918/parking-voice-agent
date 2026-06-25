@@ -64,6 +64,16 @@ curl -s http://127.0.0.1:8000/demo/turn \
 
 如果 `WECOM_WEBHOOK_URL` 为空，或 `NOTIFICATION_DRY_RUN=true`，系统不会真的发送企业微信群消息，只会记录通知内容，并将发送结果标记为跳过。
 
+## 浏览器电话接入
+
+如果你想先用浏览器模拟电话接入，可以直接打开：
+
+```text
+http://127.0.0.1:8000/browser-call
+```
+
+这个页面会用浏览器语音识别和播报完成对话闭环，同时把麦克风音频帧发到后端 `/browser-call/audio` 做连接和统计验证。当前版本不接任何实时语音供应商。
+
 ## Twilio 入口
 
 将 Twilio 语音 Webhook 配置为：

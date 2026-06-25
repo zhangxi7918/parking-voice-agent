@@ -1,0 +1,31 @@
+- main [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - heading "浏览器电话接入" [level=1] [ref=e5]
+      - paragraph [ref=e6]: 本页用浏览器听写和播报模拟电话对话，同时把 16kHz PCM 音频帧发到后端 WebSocket 供后续实时语音 API 接入。
+    - generic [ref=e7]: 未接入
+  - generic [ref=e8]:
+    - complementary [ref=e9]:
+      - generic [ref=e10]:
+        - button "接入" [ref=e11] [cursor=pointer]
+        - button "挂断" [disabled] [ref=e12]
+      - generic "麦克风输入电平" [ref=e13]
+      - generic [ref=e14]:
+        - generic [ref=e15]:
+          - generic [ref=e16]: Session
+          - strong [ref=e17]: "-"
+        - generic [ref=e18]:
+          - generic [ref=e19]: 语音识别
+          - strong [ref=e20]: 待启动
+        - generic [ref=e21]:
+          - generic [ref=e22]: 音频流
+          - strong [ref=e23]: 待连接
+        - generic [ref=e24]:
+          - generic [ref=e25]: PCM 帧
+          - strong [ref=e26]: "0"
+        - generic [ref=e27]:
+          - generic [ref=e28]: PCM 字节
+          - strong [ref=e29]: "0"
+    - generic [ref=e30]:
+      - generic [ref=e32]: 通话记录
+      - generic [ref=e34]: 点击接入后，允许麦克风权限并开始说话。

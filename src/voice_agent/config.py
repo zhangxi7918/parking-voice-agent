@@ -49,5 +49,5 @@ class Settings:
             twilio_phone_number=twilio_phone_number,
             twilio_validate_signature=_bool_from_env("TWILIO_VALIDATE_SIGNATURE", False),
             dashscope_api_key=dashscope_api_key,
-            qwen_realtime_model=os.getenv("QWEN_REALTIME_MODEL", "qwen-omni-turbo-realtime"),
+            qwen_realtime_model=os.getenv("QWEN_REALTIME_MODEL", "qwen3.5-omni-plus-realtime"),
         )
