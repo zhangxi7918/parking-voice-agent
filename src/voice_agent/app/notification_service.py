@@ -11,3 +11,6 @@ class NotificationService:
     async def notify_guard(self, session: CallSession) -> NotificationResult:
         return await self._notifier.send_visitor_intake(session)
 
+    async def notify_session_end(self, session: CallSession) -> NotificationResult:
+        return await self._notifier.send_session_summary(session)
+

@@ -16,3 +16,6 @@ class Notifier(Protocol):
     async def send_visitor_intake(self, session: CallSession) -> NotificationResult:
         """Send a completed visitor intake record to the guard."""
 
+    async def send_session_summary(self, session: CallSession) -> NotificationResult:
+        """Send an end-of-session summary with whatever info was collected."""
+

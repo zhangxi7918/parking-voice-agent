@@ -9,7 +9,7 @@ from dataclasses import dataclass
 
 import websockets
 
-from voice_agent.ports.realtime_voice import RealtimeVoiceEvent, RealtimeVoiceProvider, RealtimeVoiceSession
+from voice_agent.ports.realtime_voice import RealtimeVoiceEvent, RealtimeVoiceProvider
 
 logger = logging.getLogger(__name__)
 

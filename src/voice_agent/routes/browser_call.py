@@ -251,6 +251,11 @@ async def browser_audio_stream(
                 await qwen_session.close()
             except Exception:
                 pass
+        if session_id:
+            try:
+                await orchestrator.notify_session_end(session_id)
+            except Exception:
+                logger.exception("session_summary_notification_failed session_id=%s", session_id)
         logger.info(
             "browser_audio_stop session_id=%s frames=%s bytes=%s",
             session_id,

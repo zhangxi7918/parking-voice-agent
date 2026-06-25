@@ -67,6 +67,18 @@ class CallSessionOrchestrator:
     def get_session(self, session_id: str) -> CallSession | None:
         return self._repository.get_session(session_id)
 
+    async def notify_session_end(self, session_id: str) -> NotificationResult | None:
+        session = self._repository.get_session(session_id)
+        if session is None:
+            return None
+        if session.notification_sent:
+            return None
+        result = await self._notification_service.notify_session_end(session)
+        session.notification_sent = True
+        session.status = GateReleaseStatus.ENDED
+        self._repository.save_session(session)
+        return result
+
     def list_sessions(self, limit: int = 50) -> list[CallSession]:
         return self._repository.list_sessions(limit=limit)
 

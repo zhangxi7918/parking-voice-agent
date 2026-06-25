@@ -66,6 +66,9 @@ class FakeOrchestrator:
     def get_session(self, session_id: str) -> FakeSession | None:
         return self.sessions.get(session_id)
 
+    async def notify_session_end(self, session_id: str) -> None:
+        pass
+
 
 class FakeRealtimeVoiceSession:
     """Captures audio chunks and lets tests inject Qwen events."""
