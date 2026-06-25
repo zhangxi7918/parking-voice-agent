@@ -1,0 +1,20 @@
+[Unit]
+Description=Parking Voice Agent FastAPI service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=voice-agent
+Group=voice-agent
+WorkingDirectory=/opt/parking-voice-agent
+EnvironmentFile=/etc/parking-voice-agent/voice-agent.env
+ExecStart=/opt/parking-voice-agent/.venv/bin/uvicorn voice_agent.server:create_app --factory --host 127.0.0.1 --port 8000 --proxy-headers --forwarded-allow-ips=127.0.0.1
+Restart=always
+RestartSec=3
+
+# SQLite needs write access to DATABASE_PATH. Keep application data outside the code directory.
+StateDirectory=parking-voice-agent
+
+[Install]
+WantedBy=multi-user.target

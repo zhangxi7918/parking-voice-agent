@@ -47,6 +47,11 @@ uvicorn voice_agent.server:create_app --factory --reload
 http://127.0.0.1:8000/health
 ```
 
+## 腾讯云 CVM 部署
+
+生产部署可以使用 `deploy/tencent-cloud/` 下的 `systemd` 和 Nginx 模板，完整步骤见
+[`docs/deployment/tencent-cloud-cvm.md`](docs/deployment/tencent-cloud-cvm.md)。
+
 ## 文本演示
 
 在接入真实电话音频前，可以先用文本接口验证业务流程：
@@ -70,10 +75,27 @@ POST /twilio/voice
 该接口会返回 TwiML，并把电话媒体流指向：
 
 ```text
-WS /twilio/media?session_id=<session_id>
+WS /twilio/media
 ```
 
-当前 WebSocket 路由已经可以接收 Twilio media stream 事件，并维护完整的会话生命周期。Qwen 实时语音桥接实现应放在 `src/voice_agent/adapters/qwen/` 下。
+TwiML 会通过名为 `session_id` 的 Twilio `<Parameter>` 传递本地会话 ID。WebSocket
+路由会从 `start.customParameters` 中读取并校验该 ID，接收 Twilio media stream 事件，
+并记录收到的音频帧数和字节数，用于呼入链路自测。Qwen 实时语音桥接实现应放在
+`src/voice_agent/adapters/qwen/` 下。
+
+本地拨号自测：
+
+```bash
+uvicorn voice_agent.server:create_app --factory --reload
+ngrok http 8000
+```
+
+将 `PUBLIC_BASE_URL` 设置为 ngrok 的 HTTPS 地址，然后在 Twilio Console 中把号码的
+Voice webhook 配置为：
+
+```text
+POST {PUBLIC_BASE_URL}/twilio/voice
+```
 
 ## 环境变量
 
@@ -82,6 +104,10 @@ PUBLIC_BASE_URL           对外可访问的 HTTPS 基础 URL，供 Twilio 回�
 DATABASE_PATH             SQLite 数据库路径
 WECOM_WEBHOOK_URL         企业微信群机器人 Webhook
 NOTIFICATION_DRY_RUN      设为 true 时不发送外部通知
+TWILIO_ACCOUNT_SID        Twilio Account SID
+TWILIO_AUTH_TOKEN         Twilio Auth Token
+TWILIO_PHONE_NUMBER       用于呼入自测的 Twilio 号码
+TWILIO_VALIDATE_SIGNATURE 设为 true 时校验 Twilio webhook 签名
 DASHSCOPE_API_KEY         Qwen 实时 API Key
 QWEN_REALTIME_MODEL       Qwen 实时模型名称
 ```

@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from fastapi import Request
+from starlette.requests import HTTPConnection
 
 from voice_agent.app.call_session_orchestrator import CallSessionOrchestrator
 
 
-def get_orchestrator(request: Request) -> CallSessionOrchestrator:
-    return request.app.state.orchestrator
-
+def get_orchestrator(connection: HTTPConnection) -> CallSessionOrchestrator:
+    return connection.app.state.orchestrator
