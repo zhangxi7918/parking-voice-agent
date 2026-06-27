@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 课程笔记
+
+- docs(course-notes): 新增生产级 AI 语音助手课程笔记（2026-06-27）
+  - 基于 B 站课程链接和 DeepLearning.AI 官方课时 captions 整理语音 Agent 架构、组件取舍与延迟优化要点。
+  - 补充课程代码演示、metrics 采集指标、模型替换实验，以及对停车场门岗语音代理项目的落地启发。
+
 ## Qwen-Omni-Realtime 端到端语音
 
 - feat(realtime-voice): 实现 Qwen-Omni-Realtime 适配器，打通浏览器端到端语音对话链路（2026-06-25）
