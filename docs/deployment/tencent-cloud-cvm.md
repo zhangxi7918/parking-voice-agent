@@ -8,7 +8,7 @@
 1. `systemd` 能托管 FastAPI 服务并自动重启。
 2. Nginx 能把公网 HTTP/HTTPS 请求反代到本机 `127.0.0.1:8000`。
 3. `/health` 返回正常结果。
-4. Twilio Webhook 可以访问 `POST /twilio/voice`，媒体流可以升级到 `WS /twilio/media`。
+4. `/browser-call` 页面可以创建 LiveKit 会话，LiveKit worker 可以加入房间。
 
 ## 服务器准备
 
@@ -18,8 +18,8 @@
 - `80/tcp`：申请证书和 HTTP 访问。
 - `443/tcp`：生产 HTTPS 访问。
 
-Twilio 回调需要公网 HTTPS。建议准备一个域名，例如 `voice-agent.example.com`，并把 DNS
-解析到 CVM 公网 IP。没有域名时可以先用公网 IP 验证 `/health`，但不适合接 Twilio 生产回调。
+建议准备一个域名，例如 `voice-agent.example.com`，并把 DNS 解析到 CVM 公网 IP。
+没有域名时可以先用公网 IP 验证 `/health`。
 
 ## 安装系统依赖
 
@@ -82,25 +82,31 @@ sudo chmod 600 /etc/parking-voice-agent/voice-agent.env
 
 至少需要确认：
 
-- `PUBLIC_BASE_URL`：生产域名，例如 `https://voice-agent.example.com`。
 - `DATABASE_PATH`：建议保留 `/var/lib/parking-voice-agent/voice-agent.sqlite3`。
 - `WECOM_WEBHOOK_URL`：企业微信群机器人地址；未配置时保持 `NOTIFICATION_DRY_RUN=true`。
-- `TWILIO_*`：接入 Twilio 时填写。
-- `DASHSCOPE_API_KEY`：接入 Qwen 实时语音时填写。
+- `LIVEKIT_*`：浏览器语音链路需要填写 LiveKit URL、API Key、API Secret 和 agent name。
+- `VOICE_AGENT_AI_PROVIDER`：STT/LLM provider，支持 `openai` 或 `dashscope`。
+- `OPENAI_API_KEY`：`VOICE_AGENT_AI_PROVIDER=openai` 时使用。
+- `DASHSCOPE_API_KEY`：`VOICE_AGENT_AI_PROVIDER=dashscope` 时使用，默认 ASR 为 `qwen3-asr-flash`，LLM 为 `qwen-plus`。
+- `ELEVENLABS_API_KEY`：LiveKit worker 的 TTS pipeline 使用。
 
 ## 安装 systemd 服务
 
 ```bash
 sudo cp /opt/parking-voice-agent/deploy/tencent-cloud/parking-voice-agent.service /etc/systemd/system/parking-voice-agent.service
+sudo cp /opt/parking-voice-agent/deploy/tencent-cloud/parking-voice-agent-livekit-worker.service /etc/systemd/system/parking-voice-agent-livekit-worker.service
 sudo systemctl daemon-reload
 sudo systemctl enable --now parking-voice-agent
+sudo systemctl enable --now parking-voice-agent-livekit-worker
 sudo systemctl status parking-voice-agent
+sudo systemctl status parking-voice-agent-livekit-worker
 ```
 
 查看日志：
 
 ```bash
 journalctl -u parking-voice-agent -f
+journalctl -u parking-voice-agent-livekit-worker -f
 ```
 
 ## 配置 Nginx
@@ -149,4 +155,3 @@ curl -s https://你的域名/demo/turn \
 sudo systemctl restart parking-voice-agent
 sudo systemctl status parking-voice-agent
 ```
-

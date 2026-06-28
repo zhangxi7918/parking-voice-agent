@@ -1,13 +1,13 @@
 # 停车场门岗语音代理
 
-这是一个面向停车场门岗场景的 Python 后端服务，用语音电话完成访客信息采集、会话编排和企业微信群通知。
+这是一个面向停车场门岗场景的 Python 后端服务，用浏览器语音完成访客信息采集、会话编排和企业微信群通知。
 
 当前的生产链路设计如下：
 
 ```text
-Twilio 电话 Webhook
+LiveKit 浏览器语音房间
   -> 通话会话编排器
-  -> 实时语音适配器
+  -> LiveKit Agent STT/VAD/TTS pipeline
   -> 访客登记状态机
   -> 访客数据仓储
   -> 企业微信群机器人通知
@@ -25,8 +25,8 @@ src/voice_agent/
   app/                              用例编排层
   domain/                           业务模型与会话状态
   ports/                            与供应商无关的接口定义
-  adapters/                         Twilio、Qwen、企微、数据库等实现
-  prompts/                          智能体提示词与信息抽取 schema
+  adapters/                         企微、数据库等外部实现
+  prompts/                          智能体提示词
 ```
 
 核心约束：`domain/` 和 `app/` 不感知任何供应商 SDK 或协议细节。所有供应商相关实现都应放在 `adapters/` 下。
@@ -38,7 +38,7 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -e .
 cp .env.example .env
-uvicorn voice_agent.server:create_app --factory --reload
+voice-agent-dev
 ```
 
 启动后访问健康检查：
@@ -47,6 +47,18 @@ uvicorn voice_agent.server:create_app --factory --reload
 http://127.0.0.1:8000/health
 ```
 
+`voice-agent-dev` 会同时启动 FastAPI 和 LiveKit Agent worker，相当于在两个终端分别运行：
+
+```bash
+uvicorn voice_agent.server:create_app --factory --reload
+python -m voice_agent.livekit_worker dev
+```
+
+如果需要分别调试两个进程，也可以手动使用上面两条命令。
+
+FastAPI 进程负责页面、文本调试接口和 LiveKit token；worker 进程负责加入 LiveKit room，
+处理 VAD/STT/turn detection/TTS，并复用同一个 SQLite 会话库和企业微信通知配置。
+
 ## 腾讯云 CVM 部署
 
 生产部署可以使用 `deploy/tencent-cloud/` 下的 `systemd` 和 Nginx 模板，完整步骤见
@@ -54,7 +66,7 @@ http://127.0.0.1:8000/health
 
 ## 文本演示
 
-在接入真实电话音频前，可以先用文本接口验证业务流程：
+在接入浏览器语音前，可以先用文本接口验证业务流程：
 
 ```bash
 curl -s http://127.0.0.1:8000/demo/turn \
@@ -72,55 +84,41 @@ curl -s http://127.0.0.1:8000/demo/turn \
 http://127.0.0.1:8000/browser-call
 ```
 
-这个页面会用浏览器语音识别和播报完成对话闭环，同时把麦克风音频帧发到后端 `/browser-call/audio` 做连接和统计验证。当前版本不接任何实时语音供应商。
-
-## Twilio 入口
-
-将 Twilio 语音 Webhook 配置为：
-
-```text
-POST /twilio/voice
-```
-
-该接口会返回 TwiML，并把电话媒体流指向：
-
-```text
-WS /twilio/media
-```
-
-TwiML 会通过名为 `session_id` 的 Twilio `<Parameter>` 传递本地会话 ID。WebSocket
-路由会从 `start.customParameters` 中读取并校验该 ID，接收 Twilio media stream 事件，
-并记录收到的音频帧数和字节数，用于呼入链路自测。Qwen 实时语音桥接实现应放在
-`src/voice_agent/adapters/qwen/` 下。
-
-本地拨号自测：
-
-```bash
-uvicorn voice_agent.server:create_app --factory --reload
-ngrok http 8000
-```
-
-将 `PUBLIC_BASE_URL` 设置为 ngrok 的 HTTPS 地址，然后在 Twilio Console 中把号码的
-Voice webhook 配置为：
-
-```text
-POST {PUBLIC_BASE_URL}/twilio/voice
-```
+这个页面会向 `/browser-call/sessions` 创建本地会话并获取 LiveKit token，随后用
+LiveKit JS SDK 加入房间、打开麦克风并播放 worker 返回的门岗语音。门岗回复仍由
+`CallSessionOrchestrator` 和访客登记状态机生成，LiveKit 只负责实时媒体、转写、轮次检测和 TTS。
 
 ## 环境变量
 
 ```text
-PUBLIC_BASE_URL           对外可访问的 HTTPS 基础 URL，供 Twilio 回调使用，例如 https://demo.example.com
 DATABASE_PATH             SQLite 数据库路径
 WECOM_WEBHOOK_URL         企业微信群机器人 Webhook
 NOTIFICATION_DRY_RUN      设为 true 时不发送外部通知
-TWILIO_ACCOUNT_SID        Twilio Account SID
-TWILIO_AUTH_TOKEN         Twilio Auth Token
-TWILIO_PHONE_NUMBER       用于呼入自测的 Twilio 号码
-TWILIO_VALIDATE_SIGNATURE 设为 true 时校验 Twilio webhook 签名
-DASHSCOPE_API_KEY         Qwen 实时 API Key
-QWEN_REALTIME_MODEL       Qwen 实时模型名称
+LIVEKIT_URL               LiveKit WebSocket URL，例如 wss://your-project.livekit.cloud
+LIVEKIT_API_KEY           LiveKit API Key，用于签发浏览器 room token 和 worker 连接
+LIVEKIT_API_SECRET        LiveKit API Secret
+LIVEKIT_AGENT_NAME        LiveKit agent dispatch 名称，默认 parking-gatekeeper
+VOICE_AGENT_AI_PROVIDER   STT/LLM provider，支持 openai 或 dashscope，默认 openai
+OPENAI_API_KEY            provider=openai 时，LiveKit worker 中 OpenAI STT/LLM 插件使用
+DASHSCOPE_API_KEY         provider=dashscope 时，DashScope Qwen-ASR/Qwen LLM 使用
+DASHSCOPE_BASE_URL        DashScope OpenAI 兼容接口 base URL，默认北京地域
+DASHSCOPE_ASR_MODEL       DashScope ASR 模型，默认 qwen3-asr-flash
+DASHSCOPE_LLM_MODEL       DashScope LLM 模型，默认 qwen-plus
+ELEVENLABS_API_KEY        LiveKit worker 中 ElevenLabs TTS 插件使用
+ELEVENLABS_VOICE_ID       可选，ElevenLabs 音色 ID
 ```
+
+如果 OpenAI 没有额度，可以临时切到 DashScope：
+
+```env
+VOICE_AGENT_AI_PROVIDER=dashscope
+DASHSCOPE_API_KEY=sk-...
+DASHSCOPE_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+DASHSCOPE_ASR_MODEL=qwen3-asr-flash
+DASHSCOPE_LLM_MODEL=qwen-plus
+```
+
+切换后需要重启 `voice-agent-dev`，worker 子进程才会重新读取环境变量。
 
 ## 测试
 

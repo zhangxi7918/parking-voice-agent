@@ -17,37 +17,52 @@ def _bool_from_env(name: str, default: bool) -> bool:
 @dataclass(frozen=True, slots=True)
 class Settings:
     app_env: str
-    public_base_url: str | None
     database_path: Path
     wecom_webhook_url: str | None
     notification_dry_run: bool
-    twilio_account_sid: str | None
-    twilio_auth_token: str | None
-    twilio_phone_number: str | None
-    twilio_validate_signature: bool
+    voice_agent_ai_provider: str
+    livekit_url: str | None
+    livekit_api_key: str | None
+    livekit_api_secret: str | None
+    livekit_agent_name: str
+    openai_api_key: str | None
     dashscope_api_key: str | None
-    qwen_realtime_model: str
+    dashscope_base_url: str
+    dashscope_asr_model: str
+    dashscope_llm_model: str
+    elevenlabs_api_key: str | None
+    elevenlabs_voice_id: str | None
 
     @classmethod
     def from_env(cls) -> "Settings":
         load_dotenv()
-        public_base_url = os.getenv("PUBLIC_BASE_URL") or None
         wecom_webhook_url = os.getenv("WECOM_WEBHOOK_URL") or None
+        livekit_url = os.getenv("LIVEKIT_URL") or None
+        livekit_api_key = os.getenv("LIVEKIT_API_KEY") or None
+        livekit_api_secret = os.getenv("LIVEKIT_API_SECRET") or None
+        openai_api_key = os.getenv("OPENAI_API_KEY") or None
         dashscope_api_key = os.getenv("DASHSCOPE_API_KEY") or None
-        twilio_account_sid = os.getenv("TWILIO_ACCOUNT_SID") or None
-        twilio_auth_token = os.getenv("TWILIO_AUTH_TOKEN") or None
-        twilio_phone_number = os.getenv("TWILIO_PHONE_NUMBER") or None
+        elevenlabs_api_key = os.getenv("ELEVENLABS_API_KEY") or None
+        elevenlabs_voice_id = os.getenv("ELEVENLABS_VOICE_ID") or None
 
         return cls(
             app_env=os.getenv("APP_ENV", "local"),
-            public_base_url=public_base_url.rstrip("/") if public_base_url else None,
             database_path=Path(os.getenv("DATABASE_PATH", ".data/voice-agent.sqlite3")),
             wecom_webhook_url=wecom_webhook_url,
             notification_dry_run=_bool_from_env("NOTIFICATION_DRY_RUN", True),
-            twilio_account_sid=twilio_account_sid,
-            twilio_auth_token=twilio_auth_token,
-            twilio_phone_number=twilio_phone_number,
-            twilio_validate_signature=_bool_from_env("TWILIO_VALIDATE_SIGNATURE", False),
+            voice_agent_ai_provider=os.getenv("VOICE_AGENT_AI_PROVIDER", "openai").lower(),
+            livekit_url=livekit_url.rstrip("/") if livekit_url else None,
+            livekit_api_key=livekit_api_key,
+            livekit_api_secret=livekit_api_secret,
+            livekit_agent_name=os.getenv("LIVEKIT_AGENT_NAME", "parking-gatekeeper"),
+            openai_api_key=openai_api_key,
             dashscope_api_key=dashscope_api_key,
-            qwen_realtime_model=os.getenv("QWEN_REALTIME_MODEL", "qwen3.5-omni-plus-realtime"),
+            dashscope_base_url=os.getenv(
+                "DASHSCOPE_BASE_URL",
+                "https://dashscope.aliyuncs.com/compatible-mode/v1",
+            ).rstrip("/"),
+            dashscope_asr_model=os.getenv("DASHSCOPE_ASR_MODEL", "qwen3-asr-flash"),
+            dashscope_llm_model=os.getenv("DASHSCOPE_LLM_MODEL", "qwen-plus"),
+            elevenlabs_api_key=elevenlabs_api_key,
+            elevenlabs_voice_id=elevenlabs_voice_id,
         )

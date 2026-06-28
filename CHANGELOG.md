@@ -1,5 +1,32 @@
 # CHANGELOG
 
+## LiveKit 语音链路
+
+- feat(livekit): 支持用 DashScope 替代 OpenAI 执行 STT/LLM（2026-06-28）
+  - 新增 `VOICE_AGENT_AI_PROVIDER=dashscope` 配置，使用 DashScope Qwen-ASR 识别浏览器麦克风音频。
+  - DashScope LLM 通过 OpenAI 兼容接口接入，补充本地和部署环境变量示例。
+
+- fix(livekit): 修复 worker 接到房间任务后无法创建 job 进程的问题（2026-06-28）
+  - 将 LiveKit job entrypoint 提升为模块级函数，避免 macOS spawn 模式下局部函数无法 pickle。
+  - 通过 `JobProcess.userdata` 在子进程内初始化 settings 和 orchestrator，并补充 pickle 回归测试。
+
+- feat(dev): 新增本地一键启动命令（2026-06-28）
+  - 新增 `voice-agent-dev` console script，通过 Python 同时启动 FastAPI reload 服务和 LiveKit worker。
+  - README 补充快速启动命令及其对应的两个底层进程。
+
+- refactor(livekit): 删除未接入主链路的旧入口和预留接口（2026-06-28）
+  - 移除电话 Webhook 自测路由、重复的 `/browser-call/turn` 文本接口、未使用的 LLM JSON port 和抽取 schema。
+  - 精简配置、部署模板、README 和依赖，只保留 LiveKit 浏览器语音链路与 `/demo/turn` 文本演示。
+
+- feat(livekit): 将浏览器语音链路迁移到 LiveKit Agent pipeline（2026-06-28）
+  - 新增 LiveKit token/session 创建接口和 `voice_agent.livekit_worker`，浏览器通过 LiveKit JS SDK 加入房间。
+  - worker 负责 VAD/STT/turn detection/TTS，门岗回复仍由 `CallSessionOrchestrator` 生成并通过 `session.say()` 播放。
+  - 补充 LiveKit/OpenAI/ElevenLabs 环境变量、双进程启动说明、腾讯云 worker systemd 模板和对应单元测试。
+
+- refactor(realtime-voice): 删除旧 Qwen realtime 运行时代码（2026-06-28）
+  - 移除 Qwen adapter、RealtimeVoice port、DashScope 配置和显式 `websockets` 依赖。
+  - 浏览器语音链路只保留 LiveKit pipeline，业务状态机不变。
+
 ## 课程笔记
 
 - docs(course-notes): 新增生产级 AI 语音助手课程笔记（2026-06-27）
@@ -53,6 +80,6 @@
 ## 项目初始化
 
 - feat(project): 初始化停车场门岗语音代理后端项目（2026-06-25）
-  - 搭建 FastAPI 应用骨架，包含健康检查、文本演示和 Twilio Webhook 入口。
+  - 搭建 FastAPI 应用骨架，包含健康检查、文本演示和初始电话 Webhook 入口。
   - 建立 `app/`、`domain/`、`ports/`、`adapters/`、`routes/`、`prompts/` 分层结构。
   - 补充访客登记业务流、供应商无关接口、基础配置和单元测试入口。

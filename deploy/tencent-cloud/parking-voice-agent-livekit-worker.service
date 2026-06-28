@@ -1,0 +1,19 @@
+[Unit]
+Description=Parking Voice Agent LiveKit worker
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=voice-agent
+Group=voice-agent
+WorkingDirectory=/opt/parking-voice-agent
+EnvironmentFile=/etc/parking-voice-agent/voice-agent.env
+ExecStart=/opt/parking-voice-agent/.venv/bin/python -m voice_agent.livekit_worker start
+Restart=always
+RestartSec=3
+
+StateDirectory=parking-voice-agent
+
+[Install]
+WantedBy=multi-user.target
